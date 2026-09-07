@@ -1,0 +1,1 @@
+I created this for personal use because I hate the Cengage MindTap textbook reader interface, and prefer to use/annotate pdf printouts in onenote. This is designed to be started at the chapter level and will run until the chapter is output to pdf. The only requirements to run this is a local docker installation, everything else should be local to the project.
