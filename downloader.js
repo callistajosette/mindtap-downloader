@@ -5,7 +5,7 @@ const dns = require('dns').promises;
 
 const randomDelay = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 
-const TEST_MODE_MAX_PAGES = 1;
+const TEST_MODE_MAX_PAGES = 0;
 
 (async () => {
   const { address } = await dns.lookup('host.docker.internal');
