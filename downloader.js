@@ -5,7 +5,7 @@ const dns = require('dns').promises;
 
 const randomDelay = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 
-const TEST_MODE_MAX_PAGES = 3;
+const TEST_MODE_MAX_PAGES = 1;
 
 (async () => {
   const { address } = await dns.lookup('host.docker.internal');
@@ -46,17 +46,31 @@ const TEST_MODE_MAX_PAGES = 3;
             await dockFrame.locator('body').waitFor({ state: 'visible', timeout: 8000 });
             await page.waitForTimeout(2000); 
             
-            // Fix 1: Target the 'html' node explicitly before evaluating
+            // 1. Harvest native CSS from the main textbook reader frame
+            const nativeStyles = await readerFrame.locator('link[rel="stylesheet"], style').evaluateAll(elements => 
+                elements.map(el => el.outerHTML).join('\n')
+            );
+            
             let frameHtml = await dockFrame.locator('html').evaluate(node => node.outerHTML);
             
             frameHtml = frameHtml.replace(/<script[\s\S]*?<\/script>/gi, '');
-            frameHtml = frameHtml.replace('<head>', '<head><base href="https://ng.cengage.com/">');
+            // 2. Inject the base URL AND the harvested native styles into the head
+            frameHtml = frameHtml.replace('<head>', `<head><base href="https://ng.cengage.com/">\n${nativeStyles}`);
+            
             frameHtml = frameHtml.replace(/<div class="preview_header">/g, '<div class="preview_header" style="display:none !important;">');
             frameHtml = frameHtml.replace(/<div id="in_app_purchase_confirm">/g, '<div id="in_app_purchase_confirm" style="display:none !important;">');
+            
+            // 3. Strip the copyright header and footer blocks
+            frameHtml = frameHtml.replace(/class="copyright_header"/g, 'class="copyright_header" style="display:none !important;"');
+            frameHtml = frameHtml.replace(/class="copyright_stmt"/g, 'class="copyright_stmt" style="display:none !important;"');
 
             console.log('Rendering native vector PDF in background tab...');
             const renderPage = await defaultContext.newPage();
-            await renderPage.setContent(frameHtml, { waitUntil: 'load' });
+            await renderPage.setContent(frameHtml, { waitUntil: 'networkidle' }); 
+            
+            // Force the print engine to use web styles to retain colors
+            await renderPage.emulateMedia({ media: 'screen' });
+            
             await renderPage.waitForTimeout(1500); 
 
             const client = await renderPage.context().newCDPSession(renderPage);
