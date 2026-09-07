@@ -1,0 +1,8 @@
+{
+  "name": "mindtap-dl",
+  "version": "1.0.0",
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "playwright-core": "^1.42.0"
+  }
+}
